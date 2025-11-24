@@ -28,7 +28,8 @@ KEY_PATH = "id_rsa"
 USERNAME = "ec2-user"
 
 MODEL_FILE = "cats_vs_dogs_cnn.pth"
-BACKEND_FILE = "inference_server.py"
+FILE_NAME = "inference_server.py"
+BACKEND_FILE = f"../backend/{FILE_NAME}"
 API_PORT = 8000
 
 
@@ -70,7 +71,7 @@ def setup_slaves() -> None:
         # Subir backend + modelo
         upload_files(ssh, [
             (MODEL_FILE, f"/home/{USERNAME}/{MODEL_FILE}"),
-            (BACKEND_FILE, f"/home/{USERNAME}/{BACKEND_FILE}"),
+            (BACKEND_FILE, f"/home/{USERNAME}/{FILE_NAME}"),
         ])
 
         # Instalar Docker
@@ -84,13 +85,12 @@ def setup_slaves() -> None:
 
         time.sleep(2)
 
-        # Crear Dockerfile
         dockerfile = f"""
 FROM pytorch/pytorch:latest
 
 WORKDIR /app
 
-COPY {BACKEND_FILE} /app/{BACKEND_FILE}
+COPY {FILE_NAME} /app/{FILE_NAME}
 COPY {MODEL_FILE} /app/{MODEL_FILE}
 
 RUN pip install fastapi uvicorn pillow python-multipart
@@ -119,7 +119,6 @@ CMD ["uvicorn", "inference_server:app", "--host", "0.0.0.0", "--port", "{API_POR
 def setup_master() -> None:
     ssh = ssh_connect(MASTER_IP)
 
-    # Usamos IPs PRIVADAS en el upstream
     upstream = "\n        ".join(
         [f"server {ip}:{API_PORT};" for ip in SLAVES_PRIVATE_IPS])
 
