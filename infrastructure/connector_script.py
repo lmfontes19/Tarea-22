@@ -1,33 +1,44 @@
 import time
 import paramiko
+import os
 from pathlib import Path
 from scp import SCPClient
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
+
+
+# FUNCIONES DE CONFIGURACION
+def load_slave_ips(num_slaves: int = 6) -> tuple[list[str], list[str]]:
+    public_ips = []
+    private_ips = []
+
+    for i in range(1, num_slaves + 1):
+        slave_public_ip = os.getenv(f"SLAVE_PUBLIC_IP_{i}")
+        slave_private_ip = os.getenv(f"SLAVE_PRIVATE_IP_{i}")
+
+        if slave_public_ip is None:
+            raise ValueError(
+                f"SLAVE_PUBLIC_IP_{i} no está definida en el archivo .env")
+
+        if slave_private_ip is None:
+            raise ValueError(
+                f"SLAVE_PRIVATE_IP_{i} no está definida en el archivo .env")
+
+        public_ips.append(slave_public_ip)
+        private_ips.append(slave_private_ip)
+
+    return public_ips, private_ips
 
 
 # CONFIGURACION
-MASTER_IP = "54.210.156.47"
-
-SLAVES_PUBLIC_IPS = [
-    "98.93.52.91",
-    "18.215.157.114",
-    "54.90.225.31",
-    "3.88.218.97",
-    "34.228.53.252",
-    "44.222.199.32",
-]
-
-SLAVES_PRIVATE_IPS = [
-    "10.0.1.145",
-    "10.0.1.234",
-    "10.0.1.239",
-    "10.0.1.68",
-    "10.0.1.185",
-    "10.0.1.46",
-]
+MASTER_IP = os.getenv("MASTER_IP")
+SLAVES_PUBLIC_IPS, SLAVES_PRIVATE_IPS = load_slave_ips()
 
 KEY_PATH = "id_rsa"
 USERNAME = "ec2-user"
-import pdb;pdb.set_trace()
+
 BASE_DIR = Path(__file__).resolve().parent
 
 MODEL_NAME = "cats_vs_dogs_cnn.pth"

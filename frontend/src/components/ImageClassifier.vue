@@ -31,7 +31,7 @@
 import { ref } from "vue";
 
 // Load balancer public IP
-const API_URL = "http://3.87.113.157/predict_image";
+const API_URL = `http://${import.meta.env.VITE_MASTER_IP}/predict_image`;
 
 const selectedFile = ref(null);
 const preview = ref(null);
