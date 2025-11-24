@@ -2,11 +2,13 @@ import torch
 import torch.nn as nn
 from torchvision import transforms
 from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from PIL import Image
 from io import BytesIO
 
 
+# MODELO
 class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
@@ -23,6 +25,7 @@ class SimpleCNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(2),
         )
+
         self.fc = nn.Sequential(
             nn.Flatten(),
             nn.Linear(64 * 16 * 16, 128),
@@ -54,9 +57,24 @@ try:
 except Exception as e:
     print(f"Error al cargar el modelo: {e}")
 
+# APP
 app = FastAPI()
 
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ENDPOINTS
 class PredictionResponse(BaseModel):
     filename: str
     prediction: str
