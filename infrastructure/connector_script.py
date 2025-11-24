@@ -1,5 +1,6 @@
 import time
 import paramiko
+from pathlib import Path
 from scp import SCPClient
 
 
@@ -26,12 +27,14 @@ SLAVES_PRIVATE_IPS = [
 
 KEY_PATH = "id_rsa"
 USERNAME = "ec2-user"
+import pdb;pdb.set_trace()
+BASE_DIR = Path(__file__).resolve().parent
 
 MODEL_NAME = "cats_vs_dogs_cnn.pth"
-MODEL_FILE = f"../model/{MODEL_NAME}"
+MODEL_FILE = BASE_DIR.parent / "model" / MODEL_NAME
 
 FILE_NAME = "inference_server.py"
-BACKEND_FILE = f"../backend/{FILE_NAME}"
+BACKEND_FILE = BASE_DIR.parent / "backend" / FILE_NAME
 API_PORT = 8000
 
 
@@ -54,6 +57,7 @@ def run_commands(ssh: paramiko.SSHClient, commands: list[str]) -> None:
         err = stderr.read().decode()
         if out:
             print(out)
+
         if err:
             print(err)
 
@@ -72,8 +76,8 @@ def setup_slaves() -> None:
 
         # Subir backend + modelo
         upload_files(ssh, [
-            (MODEL_FILE, f"/home/{USERNAME}/{MODEL_NAME}"),
-            (BACKEND_FILE, f"/home/{USERNAME}/{FILE_NAME}"),
+            (str(MODEL_FILE), f"/home/{USERNAME}/{MODEL_NAME}"),
+            (str(BACKEND_FILE), f"/home/{USERNAME}/{FILE_NAME}"),
         ])
 
         # Instalar Docker
