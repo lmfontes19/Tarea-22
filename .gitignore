@@ -223,6 +223,7 @@ terraform.tfstate.backup
 *.pem
 *.key
 *.pub
+id_rsa
 
 # VSCode
 .vscode
