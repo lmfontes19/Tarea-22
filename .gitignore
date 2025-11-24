@@ -222,3 +222,6 @@ terraform.tfstate.backup
 # SSH Keys
 *.pem
 *.key
+
+# VSCode
+.vscode
