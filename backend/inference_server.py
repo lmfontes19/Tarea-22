@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from PIL import Image
 from io import BytesIO
 
+
 class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
@@ -29,11 +30,12 @@ class SimpleCNN(nn.Module):
             nn.Linear(128, 1),
             nn.Sigmoid()
         )
-        
+
     def forward(self, x):
         x = self.conv(x)
         x = self.fc(x)
         return x
+
 
 transform = transforms.Compose([
     transforms.Resize((128, 128)),
@@ -45,7 +47,8 @@ device = "cpu"
 
 model = SimpleCNN()
 try:
-    model.load_state_dict(torch.load("cats_vs_dogs_cnn.pth", map_location=device))
+    model.load_state_dict(torch.load(
+        "cats_vs_dogs_cnn.pth", map_location=device))
     model.eval()
     print("Modelo cargado exitosamente.")
 except Exception as e:
@@ -53,13 +56,16 @@ except Exception as e:
 
 app = FastAPI()
 
+
 class PredictionResponse(BaseModel):
     filename: str
     prediction: str
 
+
 @app.get("/")
 async def root():
     return {"message": "Servicio de inferencia de gatos vs perros"}
+
 
 @app.post("/predict_image", response_model=PredictionResponse)
 async def predict_image(file: UploadFile = File(...)):
@@ -67,20 +73,20 @@ async def predict_image(file: UploadFile = File(...)):
     try:
         image_data = await file.read()
         image = Image.open(BytesIO(image_data)).convert("RGB")
-        
+
         input_tensor = transform(image)
         input_batch = input_tensor.unsqueeze(0)
 
         with torch.no_grad():
             output = model(input_batch)
-            
+
         prediction = output.item()
-        
+
         if prediction < 0.5:
             label = "Gato"
         else:
             label = "Perro"
-            
+
         return {"filename": file.filename, "prediction": label}
 
     except Exception as e:
