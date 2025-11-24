@@ -325,7 +325,7 @@ Tarea-22/
         └── dog/                  # Dataset de perros
 ```
 
-## 🔧 Troubleshooting
+## roubleshooting
 
 ### Terraform: Error de autenticación AWS
 
