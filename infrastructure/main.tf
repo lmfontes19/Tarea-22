@@ -149,6 +149,123 @@ output "slaves_private_ips" {
   value = aws_instance.slaves[*].private_ip
 }
 
+output "slaves_public_ips" {provider "aws" {
+  region = "us-east-1"
+}
+
+# ==========================
+# SSH KEY
+# ==========================
+resource "tls_private_key" "deployer" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "local_file" "private_key" {
+  filename        = "id_rsa"
+  content         = tls_private_key.deployer.private_key_pem
+  file_permission = "0600"
+}
+
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer-key"
+  public_key = tls_private_key.deployer.public_key_openssh
+}
+
+# ==========================
+# SECURITY GROUP
+# ==========================
+resource "aws_security_group" "pods_security_group" {
+  name_prefix = "pods-security-group"
+
+  # HTTP para el reverse proxy / master
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # SSH
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Puerto 8000 únicamente entre instancias del mismo SG (solo slaves)
+  ingress {
+    from_port       = 8000
+    to_port         = 8000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.pods_security_group.id]
+  }
+
+  # Salida general
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# ==========================
+# 6 SLAVES
+# ==========================
+resource "aws_instance" "slaves" {
+  count         = 6
+  ami           = "ami-0fa3fe0fa7920f68e"
+  instance_type = "t3.micro"
+  key_name      = aws_key_pair.deployer.key_name
+
+  security_groups = [
+    aws_security_group.pods_security_group.name
+  ]
+
+  root_block_device {
+    volume_size = 32
+  }
+
+  tags = {
+    Name = "slave-${count.index + 1}"
+    Role = "api-node"
+  }
+}
+
+# ==========================
+# MASTER (reverse proxy / gateway)
+# ==========================
+resource "aws_instance" "master_gateway" {
+  ami           = "ami-0fa3fe0fa7920f68e"
+  instance_type = "t3.micro"
+  key_name      = aws_key_pair.deployer.key_name
+
+  security_groups = [
+    aws_security_group.pods_security_group.name
+  ]
+
+  tags = {
+    Name = "master_gateway"
+    Role = "load-balancer"
+  }
+}
+
+# ==========================
+# OUTPUTS
+# ==========================
+output "master_public_ip" {
+  value = aws_instance.master_gateway.public_ip
+}
+
 output "slaves_public_ips" {
+  value = aws_instance.slaves[*].public_ip
+}
+
+output "slaves_private_ips" {
+  value = aws_instance.slaves[*].private_ip
+}
+
   value = aws_instance.slaves[*].public_ip
 }
