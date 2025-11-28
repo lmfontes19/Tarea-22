@@ -121,11 +121,11 @@ CMD ["uvicorn", "inference_server:app", "--host", "0.0.0.0", "--port", "{API_POR
             f.write(dockerfile)
         sftp.close()
 
-        # Construir y ejecutar la app backend
+        # Construir y ejecutar la app backend con restart policy
         run_commands(ssh, [
             "cd /home/ec2-user && sudo docker build -t fastapi_app .",
             "sudo docker rm -f fastapi_app || true",
-            f"sudo docker run -d -p {API_PORT}:{API_PORT} --name fastapi_app fastapi_app",
+            f"sudo docker run -d -p {API_PORT}:{API_PORT} --name fastapi_app --restart=always fastapi_app",
         ])
 
         print(f"Slave configurado correctamente: {ip}")
